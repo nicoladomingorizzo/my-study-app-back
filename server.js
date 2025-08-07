@@ -4,6 +4,14 @@ const express = require('express');
 const app = express();
 //creo la porta
 const PORT = process.env.PORT;
+//importo listRouter
+const listRouter = require('./routes/ListRouter');
+
+//dichiaro il body parser
+app.use(express.json());
+
+//dichiaro le rotte del router
+app.use('/api/tasks', listRouter);
 
 //inizializzo il get
 app.get('/', (req, res) => {
