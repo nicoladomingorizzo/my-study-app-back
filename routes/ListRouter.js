@@ -10,5 +10,12 @@ router.get('/', listController.index)
 
 //store
 router.post('/', listController.store)
+
+//update
+router.put('/:id', listController.update)
+
+//destroy
+router.delete('/:id', listController.destroy)
+
 //esporto il router
 module.exports = router;
