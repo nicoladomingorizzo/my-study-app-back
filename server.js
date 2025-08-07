@@ -6,6 +6,10 @@ const app = express();
 const PORT = process.env.PORT;
 //importo listRouter
 const listRouter = require('./routes/ListRouter');
+//importo handleServerError middleware
+const handleServerError = require('./middlewares/handleServerError');
+//importo notFoundError middleware
+const notFoundError = require('./middlewares/NotFoundError');
 
 //dichiaro il body parser
 app.use(express.json());
@@ -17,6 +21,12 @@ app.use('/api/tasks', listRouter);
 app.get('/', (req, res) => {
     res.send('Welcome to my To-do List')
 });
+
+//uso la middleware handleServerError
+app.use(handleServerError);
+
+//uso la middleware notFoundError
+app.use(notFoundError);
 
 //server in ascolto
 app.listen(PORT, () => {
