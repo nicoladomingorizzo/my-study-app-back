@@ -14,6 +14,12 @@ const notFoundError = require('./middlewares/NotFoundError');
 //dichiaro il body parser
 app.use(express.json());
 
+//installo cors
+const cors = require('cors');
+
+//inizializzo cors
+app.use(cors());
+
 //dichiaro le rotte del router
 app.use('/api/tasks', listRouter);
 
