@@ -49,9 +49,12 @@ function store(req, res) {
 function update(req, res) {
     //recupero id e parametri
     const { id } = req.params;
+    if (!id || isNaN(parseInt(id))) {
+        return res.status(400).json({ error: true, message: 'ID non valido' });
+    }
     const { title, description, due_date } = req.body;
     const tasksSql = 'UPDATE tasks SET title = ?, description= ?, due_date = ? WHERE id = ? ;';
-    connection.execute(tasksSql, [parseInt(id), title.trim(), description.trim(), due_date], (err, result) => {
+    connection.execute(tasksSql, [title.trim(), description.trim(), due_date, parseInt(id)], (err, result) => {
         if (err) return res.status(500).json({
             error: true,
             message: err.message
@@ -64,13 +67,20 @@ function update(req, res) {
 function destroy(req, res) {
     //recupero l'id
     const { id } = req.params;
+    const taskId = parseInt(id);
+    if (isNaN(taskId)) {
+        return res.status(400).json({
+            error: true,
+            message: 'ID non valido'
+        });
+    }
     const deleteTask = 'DELETE FROM tasks WHERE id = ? ;';
     connection.execute(deleteTask, [parseInt(id)], (err, result) => {
         if (err) return res.status(500).json({
             error: true,
             message: err.message
         });
-        if (affectedRows === 0) {
+        if (result.affectedRows === 0) {
             return res.status(404).json({
                 error: true,
                 message: 'Not found'
