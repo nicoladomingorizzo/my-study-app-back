@@ -26,9 +26,11 @@ function store(req, res) {
             message: 'Il titolo della task è obbligatorio.'
         });
     };
-    //creo una costante che mi serve ad inserire una nuova cosa da fare nella lista, i valori sono 3 (?, ?, ?)
-    const insertTaskSql = 'INSERT INTO tasks (title, description, due_date) VALUES (?, ?, ?) ;';
-    connection.execute(insertTaskSql, [title.trim(), description.trim(), due_date], (err, result) => {
+    //const completed
+    const completed = 0;
+    //creo una costante che mi serve ad inserire una nuova cosa da fare nella lista, i valori sono 4 (?, ?, ?, ?)
+    const insertTaskSql = 'INSERT INTO tasks (title, description, due_date, completed) VALUES (?, ?, ?, ?) ;';
+    connection.execute(insertTaskSql, [title.trim(), description.trim(), due_date, completed], (err, result) => {
         if (err) return res.status(500).json({
             error: true,
             message: err.message
@@ -37,10 +39,39 @@ function store(req, res) {
             id: result.insertId,
             title: title.trim(),
             description: description ? description.trim() : null,
-            due_date: due_date || null
+            due_date: due_date || null,
+            completed
         }
         //restituisco lo stato 201 per conferma di aggiunta di task corretta
         res.status(201).json(newTask);
+    });
+
+}
+
+//rotta changeStatus
+function changeStatus(req, res) {
+    //recupero parametri da inserire
+    const { id } = req.params;
+    const { completed } = req.body;
+    const changeStatusSql = 'UPDATE `tasks` SET `completed` = ? WHERE `id` = ?;';
+    connection.execute(changeStatusSql, [completed, id], (err, result) => {
+        if (err) return res.status(500).json({
+            error: true,
+            message: err.message
+        });
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                error: true,
+                message: "Task non trovato"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Task ${id} aggiornato con successo`,
+            updatedStatus: completed
+        });
     });
 
 }
@@ -95,6 +126,7 @@ function destroy(req, res) {
 module.exports = {
     index,
     store,
+    changeStatus,
     update,
     destroy
 }

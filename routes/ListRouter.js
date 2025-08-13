@@ -11,6 +11,9 @@ router.get('/', listController.index)
 //store
 router.post('/', listController.store)
 
+//changeStatus
+router.put('/:id/status', listController.changeStatus)
+
 //update
 router.put('/:id', listController.update)
 
