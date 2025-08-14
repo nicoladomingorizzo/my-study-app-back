@@ -26,12 +26,20 @@ function store(req, res) {
             message: 'Il titolo della task è obbligatorio.'
         });
     };
+
+    if (title && title.length > 15) {
+        return res.status(400).json({
+            error: true,
+            message: 'Il titolo non può superare i 15 caratteri.'
+        });
+    };
+
     if (description && description.length > 50) {
         return res.status(400).json({
             error: true,
             message: 'La descrizione non può superare i 50 caratteri.'
         });
-    }
+    };
     //const completed
     const completed = 0;
     //creo una costante che mi serve ad inserire una nuova cosa da fare nella lista, i valori sono 4 (?, ?, ?, ?)
