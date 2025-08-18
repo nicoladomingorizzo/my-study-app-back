@@ -1,24 +1,19 @@
-//importo express
-const express = require('express');
-//definisco il router
+// routes/tasks.js
+import express from "express";
+import {
+    index,
+    store,
+    changeStatus,
+    update,
+    destroy
+} from "../controllers/ListController.js";
+
 const router = express.Router();
-//importo il controller
-const listController = require('../controllers/ListController');
 
-//index
-router.get('/', listController.index)
+router.get("/", index);                // lista tasks
+router.post("/", store);               // crea task
+router.patch("/:id/status", changeStatus); // cambia stato (completed)
+router.put("/:id", update);            // aggiorna task
+router.delete("/:id", destroy);        // elimina task
 
-//store
-router.post('/', listController.store)
-
-//changeStatus
-router.put('/:id/status', listController.changeStatus)
-
-//update
-router.put('/:id', listController.update)
-
-//destroy
-router.delete('/:id', listController.destroy)
-
-//esporto il router
-module.exports = router;
+export default router;

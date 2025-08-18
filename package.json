@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "my-study-app-back",
   "version": "1.0.0",
   "description": "App per la gestione dei compiti con focus sull'apprendimento",
@@ -23,6 +24,6 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "mysql2": "^3.14.3"
+    "pg": "^8.16.3"
   }
 }

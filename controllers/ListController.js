@@ -1,146 +1,117 @@
-//importo connection
-const connection = require('../db/connection')
+import pool from "../db/connection.js";
 
-//definisco le rotte che andrò ad usare in router
-
-//rotta index
-function index(req, res) {
-    const sql = 'SELECT * FROM tasks';
-    connection.execute(sql, (err, result) => {
-        if (err) return res.status(500).json({
-            errore: true,
-            message: err.message
-        });
-        res.json(result)
-    })
+// rotta index
+export async function index(req, res) {
+    try {
+        const { rows } = await pool.query("SELECT * FROM tasks ORDER BY id ASC");
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: true, message: err.message });
+    }
 }
 
-//rotta store
-function store(req, res) {
-    //recupero parametri da inserire
+// rotta store
+export async function store(req, res) {
     const { title, description, due_date } = req.body;
-    // Controllo di validazione di base per i campi richiesti
+
+    // validazioni
     if (!title) {
-        return res.status(400).json({
-            error: true,
-            message: 'Il titolo della task è obbligatorio.'
-        });
-    };
-
-    if (title && title.length > 15) {
-        return res.status(400).json({
-            error: true,
-            message: 'Il titolo non può superare i 15 caratteri.'
-        });
-    };
-
+        return res.status(400).json({ error: true, message: "Il titolo è obbligatorio." });
+    }
+    if (title.length > 15) {
+        return res.status(400).json({ error: true, message: "Il titolo non può superare i 15 caratteri." });
+    }
     if (description && description.length > 50) {
-        return res.status(400).json({
-            error: true,
-            message: 'La descrizione non può superare i 50 caratteri.'
-        });
-    };
-    //const completed
-    const completed = 0;
-    //creo una costante che mi serve ad inserire una nuova cosa da fare nella lista, i valori sono 4 (?, ?, ?, ?)
-    const insertTaskSql = 'INSERT INTO tasks (title, description, due_date, completed) VALUES (?, ?, ?, ?) ;';
-    connection.execute(insertTaskSql, [title.trim(), description.trim(), due_date, completed], (err, result) => {
-        if (err) return res.status(500).json({
-            error: true,
-            message: err.message
-        })
-        const newTask = {
-            id: result.insertId,
-            title: title.trim(),
-            description: description ? description.trim() : null,
-            due_date: due_date || null,
-            completed
-        }
-        //restituisco lo stato 201 per conferma di aggiunta di task corretta
-        res.status(201).json(newTask);
-    });
+        return res.status(400).json({ error: true, message: "La descrizione non può superare i 50 caratteri." });
+    }
 
+    const completed = false; // boolean, non 0
+
+    try {
+        const { rows: [newTask] } = await pool.query(
+            `INSERT INTO tasks (title, description, due_date, completed)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+            [title.trim(), description ? description.trim() : null, due_date || null, completed]
+        );
+
+        res.status(201).json(newTask);
+    } catch (err) {
+        res.status(500).json({ error: true, message: err.message });
+    }
 }
 
-//rotta changeStatus
-function changeStatus(req, res) {
-    //recupero parametri da inserire
+// rotta changeStatus
+export async function changeStatus(req, res) {
     const { id } = req.params;
-    const { completed } = req.body;
-    const changeStatusSql = 'UPDATE `tasks` SET `completed` = ? WHERE `id` = ?;';
-    connection.execute(changeStatusSql, [completed, id], (err, result) => {
-        if (err) return res.status(500).json({
-            error: true,
-            message: err.message
-        });
+    const { completed } = req.body; // true/false
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                error: true,
-                message: "Task non trovato"
-            });
+    try {
+        const { rows: [updated] } = await pool.query(
+            "UPDATE tasks SET completed = $1 WHERE id = $2 RETURNING *",
+            [completed, id]
+        );
+
+        if (!updated) {
+            return res.status(404).json({ error: true, message: "Task non trovato" });
         }
 
         res.status(200).json({
             success: true,
             message: `Task ${id} aggiornato con successo`,
-            updatedStatus: completed
+            updatedStatus: updated.completed
         });
-    });
-
+    } catch (err) {
+        res.status(500).json({ error: true, message: err.message });
+    }
 }
 
-//rotta update
-function update(req, res) {
-    //recupero id e parametri
+// rotta update
+export async function update(req, res) {
     const { id } = req.params;
     if (!id || isNaN(parseInt(id))) {
-        return res.status(400).json({ error: true, message: 'ID non valido' });
+        return res.status(400).json({ error: true, message: "ID non valido" });
     }
+
     const { title, description, due_date } = req.body;
-    const tasksSql = 'UPDATE tasks SET title = ?, description= ?, due_date = ? WHERE id = ? ;';
-    connection.execute(tasksSql, [title.trim(), description.trim(), due_date, parseInt(id)], (err, result) => {
-        if (err) return res.status(500).json({
-            error: true,
-            message: err.message
-        });
-        res.json({ success: true, message: 'Task aggiornata con successo' })
-    });
+
+    try {
+        const { rows: [task] } = await pool.query(
+            `UPDATE tasks
+       SET title = $1, description = $2, due_date = $3
+       WHERE id = $4
+       RETURNING *`,
+            [title.trim(), description ? description.trim() : null, due_date || null, id]
+        );
+
+        if (!task) {
+            return res.status(404).json({ error: true, message: "Task non trovata" });
+        }
+
+        res.json({ success: true, message: "Task aggiornata con successo", task });
+    } catch (err) {
+        res.status(500).json({ error: true, message: err.message });
+    }
 }
 
-//rotta destroy
-function destroy(req, res) {
-    //recupero l'id
+// rotta destroy
+export async function destroy(req, res) {
     const { id } = req.params;
     const taskId = parseInt(id);
+
     if (isNaN(taskId)) {
-        return res.status(400).json({
-            error: true,
-            message: 'ID non valido'
-        });
+        return res.status(400).json({ error: true, message: "ID non valido" });
     }
-    const deleteTask = 'DELETE FROM tasks WHERE id = ? ;';
-    connection.execute(deleteTask, [parseInt(id)], (err, result) => {
-        if (err) return res.status(500).json({
-            error: true,
-            message: err.message
-        });
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                error: true,
-                message: 'Not found'
-            });
-        };
-        res.sendStatus(204)
-    });
-};
 
+    try {
+        const result = await pool.query("DELETE FROM tasks WHERE id = $1", [taskId]);
 
-//esporto il controller
-module.exports = {
-    index,
-    store,
-    changeStatus,
-    update,
-    destroy
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: true, message: "Task non trovata" });
+        }
+
+        res.sendStatus(204);
+    } catch (err) {
+        res.status(500).json({ error: true, message: err.message });
+    }
 }
